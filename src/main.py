@@ -23,10 +23,11 @@ def load_data():
 # Funcao que exibe o menu principal
 def show_menu():
     print("=== MENU PRINCIPAL ===")
-    print("1 - Adicionar Componentes")
+    print("1 - Adicionar Itens")
     print("2 - Ver Estoque")
-    print("3 - Remover Componente")
-    print("4 - Sair")
+    print("3 - Atualizar Itens")
+    print("4 - Remover Item")
+    print("5 - Sair")
 
 # Funcao que trata os valores recebidos pelo usuario
 def get_valid_float(prompt):
@@ -44,14 +45,43 @@ def get_valid_float(prompt):
         except ValueError:
             print("\nERRO: Digite apenas números válidos.")
 
+# Funcao que verifica se a peca cadastrada existe
+def select_item(inventory):
+    if not inventory:
+        print("Estoque vazio.")
+        return None
+    
+    print("\n=== Selecione um Item ===")
+    for index, item in enumerate(inventory, start=1):
+        print(f"{index} - {item['name']}")
+
+    print("0 - Cancelar")  # Opcao de saida para o usuario
+    
+    try:
+        option = int(input("Opção: "))
+        if option == 0:
+            return None
+
+        real_index = option - 1
+
+        if 0 <= real_index < len(inventory):
+            return real_index
+        else:
+            print("Opção inválida.")
+            return None
+        
+    except ValueError:
+        print("Por favor, digite apenas números inteiros.")
+        return None
+        
 # Funcao para notificar a necessidade de aprovacao da gerencia
 def manager_approval():
     print("ATENÇÃO: Valor alto! Necessária a aprovação da gerencia.")
 
-# Funcao para adicionar as pecas
+# Funcao para adicionar pecas
 def add_component(inventory):
     while True: 
-        print("\n=== CADASTRAR PEÇAS ===")
+        print("\n=== CADASTRAR ITEM ===")
 
         # Coleta de dados
         name = input("Digite o nome do componente: ").strip().upper()
@@ -87,6 +117,46 @@ def add_component(inventory):
         if option == "2":
             break  # Quebra o loop e finaliza a funcao
 
+# Funcao para atualizar pecas
+def update_component(inventory):
+    print("\n=== ATUALIZAR ITEM ===")
+    real_index = select_item(inventory)
+
+    if real_index is None:
+        return
+    
+    item = inventory[real_index]
+
+    while True:
+        print(f"\nEditando: {item['name']}")
+        print("1 - Alterar Nome")
+        print("2 - Alterar Custo")
+        print("3 - Voltar/Salvar")
+
+        option = input("Opção: ")
+
+        if option == "1":
+            new_name = input("Novo nome: ").strip().upper()
+            if new_name: # Só altera se digitar algo
+                item['name'] = new_name
+                save_data(inventory)
+                print("Nome do item atualizado!")
+
+        elif option == "2":
+            new_cost = get_valid_float(f"(Atual: {item['cost']:.2f}) Novo custo: ")
+            item['cost'] = new_cost  # Atualiza o custo
+            item['sale'] = new_cost * (1 + fixed_profit)  # Atualiza o preco da venda
+            save_data(inventory)
+            print(f"Custo e Venda atualizados! Nova venda: R${item['sale']:.2f}")
+            if new_cost >= 500.00:
+                manager_approval()
+        
+        elif option == "3":
+            break
+
+        else:
+            print("Opção inválida.")
+
 # Funcao para listar pecas no estoque
 def list_inventory(inventory):
     print("\n=== ESTOQUE ATUAL ===")
@@ -102,28 +172,23 @@ def list_inventory(inventory):
 
 # Funcao para remover pecas do estoque
 def remove_component(inventory):
-    print("\n=== REMOVER COMPONENTE ===")
-    if not inventory:
-        print("Estoque vazio.")
-        input("\nPressione Enter para voltar ao menu...")
+    print("\n=== REMOVER ITEM ===")
+    real_index = select_item(inventory)
+
+    if real_index is None:
         return
+    
+    item_name = inventory[real_index]['name']
+    confirm = input(f"Tem certeza que deseja remover '{item_name}'? (S/N): ").strip().upper()
 
-    for index, item in enumerate(inventory, start=1):  # Percorre a lista de estoque enumerando o indice
-        print(f"{index} - {item['name']}")
-
-    try:
-        option = int(input("Opção: "))
-        real_index = option - 1  # Ajusta o indice iniciado em 1
-
-        if 0 <= real_index < len(inventory):
-            removed_item = inventory.pop(real_index)  # Remove e guarda qual foi o indice/item removido
-            save_data(inventory)
-            print(f"\n{removed_item['name']} removido com sucesso!")
-        else:
-            print("Opção inválida.\n")
-    except ValueError:
-        print("Por favor, digite apenas números inteiros.")
-
+    if confirm == 'S':
+        inventory.pop(real_index)
+        save_data(inventory)
+        print(f"Item '{item_name}' removido com sucesso!")
+    
+    else:
+        print("Operação cancelada.")
+    
     input("\nPressione Enter para voltar ao menu...")
 
 # Funcao principal
@@ -138,8 +203,10 @@ def main():
             case "2":
                 list_inventory(inventory)
             case "3":
-                remove_component(inventory)
+                update_component(inventory)
             case "4":
+                remove_component(inventory)
+            case "5":
                 print("Saindo do sistema...")
                 break
             case _:
