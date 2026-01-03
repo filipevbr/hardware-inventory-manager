@@ -1,5 +1,6 @@
 import datetime
 import json
+import csv
 
 # Taxa para o calculo do preco final
 fixed_profit = 0.3
@@ -27,7 +28,9 @@ def show_menu():
     print("2 - Ver Estoque")
     print("3 - Atualizar Itens")
     print("4 - Remover Item")
-    print("5 - Sair")
+    print("5 - Buscar Item")
+    print("6 - Exportar Relatório (CSV)")
+    print("7 - Sair")
 
 # Funcao que trata os valores recebidos pelo usuario
 def get_valid_float(prompt):
@@ -77,6 +80,51 @@ def select_item(inventory):
 # Funcao para notificar a necessidade de aprovacao da gerencia
 def manager_approval():
     print("ATENÇÃO: Valor alto! Necessária a aprovação da gerencia.")
+
+# Funcao para procurar pecas
+def search_component(inventory):
+    print("\n=== BUSCAR ITEM ===")
+    if not inventory:
+        print("Estoque vazio.")
+        return
+    
+    term = input("Digite o nome do item (ou parte dele): ").strip().upper()
+    found_items = [item for item in inventory if term in item['name']]
+
+    if found_items:
+        print(f"\nForam encontrados {len(found_items)} itens:")
+        for item in found_items:
+            print(f"- {item['name']} | Valor: R${item['sale']:.2f}")
+    else:
+        print("Nenhum item foi encontrado.")
+
+    input("\nPressione Enter para voltar ao menu...")
+
+# Funcao para exportar o CSV
+def export_report(inventory):
+    print("\n=== EXPORTAR RELATÓRIO (CSV) ===")
+    if not inventory:
+        print("Estoque vazio. Nada para exportar.")
+        return
+    
+    filename = "relatorio_estoque.csv"
+
+    try:
+        # 'w' = write.
+        # newline='' = evita pular linha extra no Windows.
+        # encoding='utf-8' = pra não bugar acento.
+        with open(filename, mode='w', newline='', encoding='utf-8') as file:
+            fieldnames = ['name', 'cost', 'sale', 'registration_date']  # Define as colunas da tabela.
+            writer = csv.DictWriter(file, fieldnames=fieldnames)  # Escreve a tabela.
+            writer.writeheader()  # Escreve o cabecalho da tabela.
+            writer.writerows(inventory)  # Escreve todas as linhas da lista de uma unica vez.
+        
+        print(f"Sucesso! O arquivo '{filename}' foi gerado na pasta.")
+    
+    except Exception as e:
+        print(f"Erro ao exportar: {e}")
+    
+    input("\nPressione Enter para voltar ao menu...")
 
 # Funcao para adicionar pecas
 def add_component(inventory):
@@ -207,6 +255,10 @@ def main():
             case "4":
                 remove_component(inventory)
             case "5":
+                search_component(inventory)
+            case "6":
+                export_report(inventory)
+            case "7":
                 print("Saindo do sistema...")
                 break
             case _:
