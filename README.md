@@ -60,7 +60,7 @@ Os próximos passos planejados são:
 
 5.  **Execute o sistema:**
     ```bash
-    python main.py
+    python src/main.py
     ```
 
 ---
